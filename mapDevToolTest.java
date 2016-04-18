@@ -1,9 +1,10 @@
 /** 
  * 
- *  Map Tool Dev r0
+ *  Map Tool Dev r1
  *  This code resues the TestPicking example from cubes engine
+ *  Voxel size and camera movement speed is now adjusted to comfortable (useable) level
  *  TODO: Add ability to change target block type to add
- *  TODO: Load/Save ability
+ *  TODO: Load/Save ability (currently being developed in fileMAnagementDev.java)
  *  TODO: Create block type to register game node (i.e. spawn points, item placement, interactive objects/blocks)
  */
 
@@ -50,7 +51,7 @@ public class mapDevToolTest extends SimpleApplication implements ActionListener{
         initGUI();
         cam.setLocation(new Vector3f(-16.6f, 46, 97.6f));
         cam.lookAtDirection(new Vector3f(0.68f, -0.47f, -0.56f), Vector3f.UNIT_Y);
-        flyCam.setMoveSpeed(250);
+        flyCam.setMoveSpeed(15);
     }
     
     private void initControls(){
@@ -60,8 +61,13 @@ public class mapDevToolTest extends SimpleApplication implements ActionListener{
         inputManager.addListener(this, "remove_block");
     }
     
+    // initBlockTerrain() encapsulates the process of creating the voxel map
+    // The original example uses an in-built noise function to randomly generate an editable terrain
     private void initBlockTerrain(){
-        blockTerrain = new BlockTerrainControl(CubesTestAssets.getSettings(this), new Vector3Int(2, 1, 2));
+        CubesTestAssets.registerBlocks();
+        CubesSettings blockSettings = CubesTestAssets.getSettings(this);
+        blockSettings.setBlockSize(5);
+        blockTerrain = new BlockTerrainControl(blockSettings, new Vector3Int(2, 1, 2));
         blockTerrain.setBlockArea(new Vector3Int(0, 0, 0), new Vector3Int(32, 1, 32), CubesTestAssets.BLOCK_STONE);
         blockTerrain.setBlocksFromNoise(new Vector3Int(0, 1, 0), new Vector3Int(32, 5, 32), 0.5f, CubesTestAssets.BLOCK_GRASS);
         terrainNode = new Node();

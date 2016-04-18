@@ -15,3 +15,6 @@ This is the result after studying jMonkeys tutorials on first-person camera move
 
 #mapDevToolTest.java
 It gets tiring trying to design a voxel map with code only. As this endeavor expands, a graphical map editor will be much needed. Lucky for me, the open-sourced cubes engine provides an example of the basics involved with a voxel map editor. That example will be refactored into a custom scene editor.
+
+#fileManagementDev.java
+Planning to refactor example code from jMonkey into a custom save/load tool for maps created with mapDevTool. At the moment, this is just a class file to encapsulate the required methods and functionality.

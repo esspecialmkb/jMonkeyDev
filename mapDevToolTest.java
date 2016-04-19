@@ -1,11 +1,19 @@
 /** 
  * 
- *  Map Tool Dev r2
- *  This code resues the TestPicking example from cubes engine
- *  Voxel size and camera movement speed is now adjusted to comfortable (useable) level
- *  Done: Add ability to change target block type to add
- *  TODO: Load/Save ability (currently being developed in fileMAnagementDev.java)
+ *  Map Tool Dev r3
+ *  2nd Generation code from mapDevToolTest
+ * 
+ *  DONE: Load/Save ability (currently being developed in fileMAnagementDev.java)
+ *  - Pressing left control now saves data to "MyTerrain.cube"
+ * 
+ *  The basic implementation for save/loadis complete and file saving has been tested
+ *  The implementation for loading data no longer throws an exception
+ * 
+ *  TODO: Implement loading data at start
+ *  - Pressing left shift now loads data from "MyTerrain.cube" 
+ * 
  *  TODO: Create block type to register game node (i.e. spawn points, item placement, interactive objects/blocks)
+ * 
  */
 
 package MapDev;
@@ -24,9 +32,17 @@ import com.jme3.math.Vector2f;
 import com.jme3.system.AppSettings;
 import com.jme3.scene.Node;
 import com.cubes.*;
+import com.cubes.network.CubesSerializer;
 import com.cubes.test.CubesTestAssets;
+import com.jme3.export.binary.BinaryExporter;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.KeyTrigger;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class mapDevToolTest extends SimpleApplication implements ActionListener{
 
@@ -40,10 +56,11 @@ public class mapDevToolTest extends SimpleApplication implements ActionListener{
         settings = new AppSettings(true);
         settings.setWidth(1280);
         settings.setHeight(720);
-        settings.setTitle("Map Dev Tool Test r0");
+        settings.setTitle("Map Dev Tool Test r3");
     }
     private Node terrainNode;
     private BlockTerrainControl blockTerrain;
+    private byte[] serialBlockTerrain;
     
     /**
      * 
@@ -72,6 +89,79 @@ public class mapDevToolTest extends SimpleApplication implements ActionListener{
         cam.lookAtDirection(new Vector3f(0.68f, -0.47f, -0.56f), Vector3f.UNIT_Y);
         flyCam.setMoveSpeed(15);
         currentBlock = 0;
+    }
+    
+    //  This save function serializes the voxel map and writes the byte data
+    //directly to a file. I was having an issue writing directly to assets/models
+    //folder so until it's fixed, we're saving under VoxelPlatform directory
+    public void saveTerrainNode() {
+        String userHome = System.getProperty("user.home");
+        //File file = new File(userHome+"/Models/"+"MyTerrain.cube");
+        File file = new File("MyTerrain.cube");
+        serialBlockTerrain = CubesSerializer.writeToBytes(blockTerrain);
+        int length = serialBlockTerrain.length;
+        BufferedOutputStream outBuff = null;
+        try {
+          //exporter.save(serialBlockTerrain, file);
+            FileOutputStream out = new FileOutputStream(file);
+            outBuff = new BufferedOutputStream(out);
+            //outBuff.write(length);
+            System.out.println("Writing data");
+            outBuff.write(serialBlockTerrain);
+        } catch (IOException ex) {
+          Logger.getLogger(mapDevToolTest2.class.getName()).log(Level.SEVERE, "Error: Failed to save game!", ex);
+        } finally {
+            if(outBuff != null) {
+                try {
+                    System.out.println("Closing file buffer");
+                    outBuff.flush();
+                    outBuff.close();
+                } catch(Exception e){}
+            }
+        }
+    }
+    
+    // This load function loads a pre-made voxel map and re-creates the blockTerrain 
+    public void loadTerrainNode() throws IOException {
+        String userHome = System.getProperty("user.home");
+        
+        //File file = new File(userHome+"/Models/"+"MyTerrain.cube");
+        File file = new File("MyTerrain.cube");
+        InputStream in = new FileInputStream(file);
+        
+        //  Get the file length, workaraound for determining how many elements should be
+        //within the serialized byte array. In future, an integer reference preceding the
+        //data can allow voxel data to exist next to other data in the same file
+        long length = file.length();
+        
+        //  Check to ensure that we haven't exceded interger limitations
+        if(length > Integer.MAX_VALUE) {
+            throw new IOException("File too long");
+        }
+        
+        //  Empty byte array to serialize imported voxel map
+        byte[] bytes = new byte[(int)length];
+        int offset = 0;
+        int numRead = 0;
+        
+        //  Begin reading data byte per byte and increment offset
+        while(offset < bytes.length && (numRead = in.read(bytes, offset, bytes.length-offset)) >= 0) {
+            offset += numRead;
+        }
+        
+        if( offset < bytes.length) {
+            throw new IOException("Can't confirm file");
+        }
+        
+        //  Close the stream and set the blockTerrain
+        in.close();
+        terrainNode.removeControl(blockTerrain);
+        rootNode.detachChild(terrainNode);
+        //  Importing map data
+        System.out.println("Importing map data via CubesSerializer");
+        CubesSerializer.readFromBytes(blockTerrain, bytes);
+        terrainNode.addControl(blockTerrain);
+        rootNode.attachChild(terrainNode);
     }
     
     // Callback-helper method to update currentBlock data from onAction method
@@ -120,6 +210,13 @@ public class mapDevToolTest extends SimpleApplication implements ActionListener{
         // Adding mapping and listener for change_block action
         inputManager.addMapping("change_block", new KeyTrigger(KeyInput.KEY_SPACE));
         inputManager.addListener(this, "change_block");
+        
+        // Mappings to allow saving and loading of voxel map
+        inputManager.addMapping("save_block", new KeyTrigger(KeyInput.KEY_LCONTROL));
+        inputManager.addListener(this, "save_block");
+        inputManager.addMapping("load_block", new KeyTrigger(KeyInput.KEY_LSHIFT));
+        inputManager.addListener(this, "load_block");
+        
     }
     
     // initBlockTerrain() encapsulates the process of creating the voxel map
@@ -166,7 +263,9 @@ public class mapDevToolTest extends SimpleApplication implements ActionListener{
         currentBlockDisplay.setLocalTranslation(0, settings.getHeight() - (3 * instructionsText3.getLineHeight()), 0);
         guiNode.attachChild(currentBlockDisplay);
    }
-
+    
+    // The onAction method implements the actions that are registered from  inputManager from 
+    //initControls method
     @Override
     public void onAction(String action, boolean value, float lastTimePerFrame){
         if(action.equals("set_block") && value){
@@ -211,10 +310,20 @@ public class mapDevToolTest extends SimpleApplication implements ActionListener{
             if((blockLocation != null) && (blockLocation.getY() > 0)){
                 blockTerrain.removeBlock(blockLocation);
             }
-        }
+        } // This action allows you to change the block that you are building with
         else if(action.equals("change_block") && value) {
             // Call the helper method: changeCurrentBlock
             changeCurrentBlock();
+        } // This action calls the saveTerrainNode method to save data when LCONTROL is pressed
+        else if(action.equals("save_block") && value) {
+            saveTerrainNode();
+        } // This action calls the loadTerrainNode method to load data
+        else if(action.equals("load_block") && value) {
+            try {
+                loadTerrainNode();
+            } catch (IOException ex) {
+                Logger.getLogger(mapDevToolTest2.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
     
@@ -237,3 +346,4 @@ public class mapDevToolTest extends SimpleApplication implements ActionListener{
         return results;
     }
 }
+

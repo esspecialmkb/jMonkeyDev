@@ -7,6 +7,9 @@ There are at least four note-worthy java classes I have completed thus far (out 
 #ActorClassDev.java
 This class serves as a potential work-around for a stressful issue I was having with importing animations from blender into jMonkeyEngine. In the spirit of R&D, instead of allowing that temporary setback issue to turn me away from jMonkey, I decided to take matters into my hands as far as developing a 'rag doll' that I could animate from code (simple animations). This file will serve as a foundation to a potential animation editor/engine that will be set apart from jMonkeys existing animation code.
 
+#HelloActorControl.java
+It has been a while since I had my first level prototype up and running. I figured that it's a good time to find a solution for animation. HelloActorControl.java is my best implementation of programmatically creating and executing a looping animation. From this prototype an ActorAnimation class will be developed.
+
 #Tank.java
 Proof of concept of using scenegraph Nodes as moveable joints to child spatials(invisible nodes animating visible scene elements). Precursor to ActorClassDev.java.
 

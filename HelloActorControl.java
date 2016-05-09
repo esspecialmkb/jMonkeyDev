@@ -1,36 +1,118 @@
 /*
- *      The HelloActorControl prototype
- *   I desparately needed an implementation for simple "programmed' animations for my
- *  ActorControl class. The whole purpose for it was as a work-around for blender animations.
- *  The simpleUpdate method implements a rudimentary walk animation based on keyFrames
+ *      The HelloActorControl prototype, third revision
+ *      Animation code now exists within AnimationControl.java and includes transitions
  * 
- *  simpleUpdate will be refactored into separate code and simply provide tweened frame transformations
+ *  simpleUpdate has been refactored into separate code
  */
 
 package CustomActor;
 
 import com.jme3.app.SimpleApplication;
-import com.jme3.math.FastMath;
-import com.jme3.math.Quaternion;
+import com.jme3.input.KeyInput;
+import com.jme3.input.MouseInput;
+import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.AnalogListener;
+import com.jme3.input.controls.KeyTrigger;
+import com.jme3.input.controls.MouseAxisTrigger;
+import com.jme3.input.controls.MouseButtonTrigger;
+import com.jme3.math.Vector3f;
 
-public class HelloActorControl extends SimpleApplication {
-    // We need to store information about the keyFrame rotations
-    float keyFrame[] = {-30,30,-30};    //lLeg keyFrames
-    float keyFrame2[] = {30,-30,30};    //rLeg keyFrames
-    float keyFrame3[] = {30,-30,30};    //lArm keyFrames
-    float keyFrame4[] = {-30,30,-30};   //rArm keyFrames
-    
-    // This array tracks the frame number for each keyframe
-    float keyFrameTime[] = {0,5,10};
-    float fps = 1; // Should be renamed 'speed_factor'
-    float currentFrameTime = 0f;
-    float currentFrame = 0;
-    
-    // My custom ActorControl class
+/** Sample 1 - how to get started with the most simple JME 3 application.
+ * Display a blue 3D cube and view from all sides by
+ * moving the mouse and pressing the WASD keys. */
+public class HelloActorControl_3 extends SimpleApplication implements ActionListener,AnalogListener{
+    // Old animation code refactored into AnimationControl.java
     ActorControl actor;
+    AnimationControl anim;
+    boolean defaultInputMappings = true;
+    
+    private void initControls(){
+        if(defaultInputMappings == false) {
+            inputManager.deleteMapping( SimpleApplication.INPUT_MAPPING_MEMORY );
+            inputManager.deleteMapping( SimpleApplication.INPUT_MAPPING_HIDE_STATS );
+            inputManager.deleteMapping( SimpleApplication.INPUT_MAPPING_CAMERA_POS );
+            inputManager.deleteMapping( SimpleApplication.INPUT_MAPPING_EXIT );
+        }
+        
+        inputManager.addMapping("Forward", new KeyTrigger(KeyInput.KEY_W));
+        inputManager.addMapping("Move_Left", new KeyTrigger(KeyInput.KEY_A));
+        inputManager.addMapping("Backward", new KeyTrigger(KeyInput.KEY_S));
+        inputManager.addMapping("Move_Right", new KeyTrigger(KeyInput.KEY_D));
+        inputManager.addMapping("Mouse_Right", new MouseAxisTrigger(MouseInput.AXIS_X,true));
+        inputManager.addMapping("Mouse_Left", new MouseAxisTrigger(MouseInput.AXIS_X, true));
+        inputManager.addMapping("Mouse_Up", new MouseAxisTrigger(MouseInput.AXIS_Y, true));
+        inputManager.addMapping("Mouse_Down", new MouseAxisTrigger(MouseInput.AXIS_Y, false));
+        inputManager.addMapping("Mouse_Wheel_Up", new MouseAxisTrigger(MouseInput.AXIS_WHEEL, false));
+        inputManager.addMapping("Mouse_Wheel_Down", new MouseAxisTrigger(MouseInput.AXIS_WHEEL, true));
+        
+        inputManager.addListener(this, "Forward"); 
+        inputManager.addListener(this, "Move_Left"); 
+        inputManager.addListener(this, "Backward"); 
+        inputManager.addListener(this, "Move_Right"); 
+        inputManager.addListener(this, "Mouse_Up");
+        inputManager.addListener(this, "Mouse_Down");
+        inputManager.addListener(this, "Mouse_Left");
+        inputManager.addListener(this, "Mouse_Right");
+        inputManager.addListener(this, "Mouse_Wheel_Up");
+        inputManager.addListener(this, "Mouse_Wheel_Down");
+    }
+
+    public void onAction(String name, boolean isPressed, float tpf) {
+        if(name.equals("Forward")) {
+            if(isPressed) {
+                anim.setCurrentAction(2);
+            } else if (!isPressed) {
+                anim.setCurrentAction(1);
+            }
+        } else if(name.equals("Backward")) {
+            if(isPressed) {
+                anim.setCurrentAction(2);
+            } else if (!isPressed) {
+                anim.setCurrentAction(1);
+            } 
+        } else if(name.equals("Move_Left")) {
+            if(isPressed) {
+                anim.setCurrentAction(2);
+            } else if (!isPressed) {
+                anim.setCurrentAction(1);
+            }  
+        } else if(name.equals("Move_Right")) {
+            if(isPressed) {
+                anim.setCurrentAction(2);
+            } else if (!isPressed) {
+                anim.setCurrentAction(1);
+            }
+        }
+    }
+    
+    public void onAnalog(String name, float value, float tpf) {
+        if(name.equals("Forward")) {
+            
+        } else if(name.equals("Backward")) {
+            
+        } else if(name.equals("Move_Left")) {
+            
+        } else if(name.equals("Move_Right")) {
+           
+        } else if(name.equals("Mouse_Up")) {
+           
+        } else if(name.equals("Mouse_Down")) {
+           
+        } else if(name.equals("Mouse_Left")) {
+           
+        } else if(name.equals("Mouse_Right")) {
+            
+        } else if(name.equals("Mouse_Wheel_Up")) {
+           
+        } else if(name.equals("Mouse_Wheel_Down")) {
+            
+        } 
+    }
+    
+    //Moving animation class to AnimationControl
         
     public static void main(String[] args){
-        HelloActorControl app = new HelloActorControl();
+        HelloActorControl_3 app = new HelloActorControl_3();
         app.start(); // start the game
     }
 
@@ -39,75 +121,14 @@ public class HelloActorControl extends SimpleApplication {
         actor = new ActorControl(this); 
         rootNode.attachChild(actor.handle);
         actor.handle.move(0,0,-5);// make the cube appear in the scene
+        cam.setLocation(new Vector3f(0,2,5));
+        flyCam.setEnabled(false);
+        anim = new AnimationControl(actor);
+        initControls();
     }
     
     @Override
     public void simpleUpdate(float tpf) {
-        // Calculate the currentFrame with respect to speed
-        currentFrame = currentFrameTime / (1/fps);
-        float tweenLength = 0;
-        float frameDiff = 0f;
-        
-        // Interpolate value for tween
-        float perc = 0f;
-        
-        // Frame results from tween
-        float frameValue = 0f;
-        float frameValue2 = 0f;
-        float frameValue3 = 0f;
-        float frameValue4 = 0f;
-        int tween = 1;
-        if(currentFrame < keyFrameTime[1]) {
-            //First tween
-            tweenLength = keyFrameTime[1] - keyFrameTime[0];
-            frameDiff = tweenLength - currentFrame;
-            
-            // Calculate the interpolation value depending on frame time
-            perc = (float)(tweenLength - frameDiff) / tweenLength;
-            
-            // Calculate an interpolated frame (first tween)
-            frameValue = FastMath.interpolateLinear(perc,keyFrame[0],keyFrame[1]);
-            frameValue2 = FastMath.interpolateLinear(perc,keyFrame2[0],keyFrame2[1]);
-            frameValue3 = FastMath.interpolateLinear(perc,keyFrame3[0],keyFrame3[1]);
-            frameValue4 = FastMath.interpolateLinear(perc,keyFrame4[0],keyFrame4[1]);
-        } else if(currentFrame < keyFrameTime[2]) {
-            //Second tween
-            float adjFrame = currentFrame - keyFrameTime[1];
-            tweenLength = keyFrameTime[2] - keyFrameTime[1];
-            frameDiff = tweenLength - adjFrame;
-            
-            // Calculate the interpolation value depending on frame time
-            perc = (float)(tweenLength - frameDiff) / tweenLength;
-            
-            // Calculate an interpolated frame (second tween)
-            frameValue = FastMath.interpolateLinear(perc, keyFrame[1],keyFrame[2]);
-            frameValue2 = FastMath.interpolateLinear(perc, keyFrame2[1],keyFrame2[2]);
-            frameValue3 = FastMath.interpolateLinear(perc, keyFrame3[1],keyFrame3[2]);
-            frameValue4 = FastMath.interpolateLinear(perc, keyFrame4[1],keyFrame4[2]);
-            tween = 2;
-        } else if(currentFrame > keyFrameTime[2]) {
-            //Loop to beginning and reset currentFrameTime
-            currentFrame = currentFrame % (keyFrameTime[2] - keyFrameTime[0]);
-            currentFrameTime = currentFrame * fps;
-            
-            //Now that the currentFrame has been adjusted to the next loop, do the first tween
-            tweenLength = keyFrameTime[1] - keyFrameTime[0];
-            frameDiff = tweenLength - currentFrame;
-            perc = (float)(tweenLength - frameDiff) / tweenLength;
-            
-            // Calculate an interpolated frame (loop to first tween)
-            frameValue = FastMath.interpolateLinear(perc,keyFrame[0],keyFrame[1]);
-            frameValue2 = FastMath.interpolateLinear(perc,keyFrame2[0],keyFrame2[1]);
-            frameValue3 = FastMath.interpolateLinear(perc,keyFrame3[0],keyFrame3[1]);
-            frameValue4 = FastMath.interpolateLinear(perc,keyFrame4[0],keyFrame4[1]);
-        }
-        //Animate the actor according to frameValue
-        actor.lLeg.setLocalRotation(new Quaternion().fromAngles(frameValue * FastMath.DEG_TO_RAD,0,0));
-        actor.rLeg.setLocalRotation(new Quaternion().fromAngles(frameValue2 * FastMath.DEG_TO_RAD,0,0));
-        actor.lArm.setLocalRotation(new Quaternion().fromAngles(frameValue3 * FastMath.DEG_TO_RAD,0,0));
-        actor.rArm.setLocalRotation(new Quaternion().fromAngles(frameValue4 * FastMath.DEG_TO_RAD,0,0));
-        //Advance currentFrameTime counter
-        currentFrameTime = currentFrameTime + (tpf * 10);
-        System.out.println("Frame value = " + frameValue + ". TweenFrames = " + tween + ". percent = " + perc);
+        anim.update(tpf);
     }
 }
